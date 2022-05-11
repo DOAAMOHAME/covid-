@@ -1,0 +1,188 @@
+create directory covid
+
+dbutils.fs.mkdirs("/FileStore/tables/covid")
+show path
+
+dbutils.fs.ls("/FileStore/tables/covid")
+
+from pyspark.sql.functions import *
+from pyspark.sql.types import *
+import pandas as pd
+import pyspark.sql.functions as f
+import numpy as np 
+import matplotlib.pyplot as plt 
+ 
+EXTRACT
+
+cases=spark.read.format("csv").load('dbfs:/FileStore/tables/covid/covid.txt/',header=True,schema=schema)
+ 
+display(cases)
+
+
+converts a Spark Dataframe into a Pandas Dataframe
+
+cases.limit(10).toPandas()
+Date	Country	Confirmed	Recovered	Deaths
+0	2020-01-22	Afghanistan	0	0	0.0
+1	2020-01-23	Afghanistan	0	0	0.0
+2	2020-01-24	Afghanistan	0	0	0.0
+3	2020-01-25	Afghanistan	0	0	0.0
+4	2020-01-26	Afghanistan	0	0	0.0
+5	2020-01-27	Afghanistan	0	0	0.0
+6	2020-01-28	Afghanistan	0	0	0.0
+7	2020-01-29	Afghanistan	0	0	0.0
+8	2020-01-30	Afghanistan	0	0	0.0
+9	2020-01-31	Afghanistan	0	0	0.0
+
+#simple sort
+cases.sort("confirmed").show()
++----------+-----------+---------+---------+------+
+|      Date|    Country|Confirmed|Recovered|Deaths|
++----------+-----------+---------+---------+------+
+|2020-01-22|Afghanistan|        0|        0|   0.0|
+|2020-01-23|Afghanistan|        0|        0|   0.0|
+|2020-01-24|Afghanistan|        0|        0|   0.0|
+|2020-01-25|Afghanistan|        0|        0|   0.0|
+|2020-01-26|Afghanistan|        0|        0|   0.0|
+|2020-01-27|Afghanistan|        0|        0|   0.0|
+|2020-01-28|Afghanistan|        0|        0|   0.0|
+|2020-01-29|Afghanistan|        0|        0|   0.0|
+|2020-01-30|Afghanistan|        0|        0|   0.0|
+|2020-01-31|Afghanistan|        0|        0|   0.0|
+|2020-02-01|Afghanistan|        0|        0|   0.0|
+|2020-02-02|Afghanistan|        0|        0|   0.0|
+|2020-02-03|Afghanistan|        0|        0|   0.0|
+|2020-02-04|Afghanistan|        0|        0|   0.0|
+|2020-02-05|Afghanistan|        0|        0|   0.0|
+|2020-02-06|Afghanistan|        0|        0|   0.0|
+|2020-02-07|Afghanistan|        0|        0|   0.0|
+|2020-02-08|Afghanistan|        0|        0|   0.0|
+|2020-02-09|Afghanistan|        0|        0|   0.0|
+|2020-02-10|Afghanistan|        0|        0|   0.0|
++----------+-----------+---------+---------+------+
+only showing top 20 rows
+
+Using Spark UDFs
+
+def casesHihghLow(confirmed):
+    if confirmed < 50 :
+        return 'low'
+    else :
+        return "high"
+#convert to a UDF Function by passing in the function and return type of function
+casesHihghLowUdf=f.udf(casesHihghLow,StringType())
+CasesWithHighLow=cases.withColumn("HighLow",casesHihghLowUdf('confirmed'))
+CasesWithHighLow.show()    
++----------+-----------+---------+---------+------+-------+
+|      Date|    Country|Confirmed|Recovered|Deaths|HighLow|
++----------+-----------+---------+---------+------+-------+
+|2020-01-22|Afghanistan|        0|        0|   0.0|    low|
+|2020-01-23|Afghanistan|        0|        0|   0.0|    low|
+|2020-01-24|Afghanistan|        0|        0|   0.0|    low|
+|2020-01-25|Afghanistan|        0|        0|   0.0|    low|
+|2020-01-26|Afghanistan|        0|        0|   0.0|    low|
+|2020-01-27|Afghanistan|        0|        0|   0.0|    low|
+|2020-01-28|Afghanistan|        0|        0|   0.0|    low|
+|2020-01-29|Afghanistan|        0|        0|   0.0|    low|
+|2020-01-30|Afghanistan|        0|        0|   0.0|    low|
+|2020-01-31|Afghanistan|        0|        0|   0.0|    low|
+|2020-02-01|Afghanistan|        0|        0|   0.0|    low|
+|2020-02-02|Afghanistan|        0|        0|   0.0|    low|
+|2020-02-03|Afghanistan|        0|        0|   0.0|    low|
+|2020-02-04|Afghanistan|        0|        0|   0.0|    low|
+|2020-02-05|Afghanistan|        0|        0|   0.0|    low|
+|2020-02-06|Afghanistan|        0|        0|   0.0|    low|
+|2020-02-07|Afghanistan|        0|        0|   0.0|    low|
+|2020-02-08|Afghanistan|        0|        0|   0.0|    low|
+|2020-02-09|Afghanistan|        0|        0|   0.0|    low|
+|2020-02-10|Afghanistan|        0|        0|   0.0|    low|
++----------+-----------+---------+---------+------+-------+
+only showing top 20 row
+
+
+TRANSFORMATION
+
+filter
+
+cases.filter((cases.Confirmed>10) & (cases.Country=='Albania')).show()
++----------+-------+---------+---------+------+
+|      Date|Country|Confirmed|Recovered|Deaths|
++----------+-------+---------+---------+------+
+|2020-03-11|Albania|       12|        0|     1|
+|2020-03-12|Albania|       23|        0|     1|
+|2020-03-13|Albania|       33|        0|     1|
+|2020-03-14|Albania|       38|        0|     1|
+|2020-03-15|Albania|       42|        0|     1|
+|2020-03-16|Albania|       51|        0|     1|
+|2020-03-17|Albania|       55|        0|     1|
+|2020-03-18|Albania|       59|        0|     2|
+|2020-03-19|Albania|       64|        0|     2|
+|2020-03-20|Albania|       70|        0|     2|
+|2020-03-21|Albania|       76|        2|     2|
+|2020-03-22|Albania|       89|        2|     2|
+|2020-03-23|Albania|      104|        2|     4|
+|2020-03-24|Albania|      123|       10|     5|
+|2020-03-25|Albania|      146|       17|     5|
+|2020-03-26|Albania|      174|       17|     6|
+|2020-03-27|Albania|      186|       31|     8|
+|2020-03-28|Albania|      197|       31|    10|
+|2020-03-29|Albania|      212|       33|    10|
+|2020-03-30|Albania|      223|       44|    11|
++----------+-------+---------+---------+------+
+
+cases.createOrReplaceTempView("Countries")
+--------------------------------------------------
+WHICH COUNTRY HAS THE HIGHEST ACTIVE CASES
+
+spark.sql('select Country,Date,Confirmed  from Countries where Confirmed =(select max (Confirmed) from Countries) ') .show()
+(3) Spark Jobs
++-------+----------+---------+
+|Country|      Date|Confirmed|
++-------+----------+---------+
+|     US|2021-05-24| 33143246|
++-------+----------+---------+    
+
+spark.sql("select Country,Date,Deaths from Countries where Deaths=(select max (Deaths)  from Countries) ") .show()
+(3) Spark Jobs
++-------+----------+--------+
+|Country|      Date|  Deaths|
++-------+----------+--------+
+|     US|2021-05-24|590529.0|
++-------+----------+--------+
+
+
+spark.sql("select Country,Date, Recovered from Countries where Recovered=(select max (Recovered) from Countries ) ") .show()
+(3) Spark Jobs
++-------+----------+---------+
+|Country|      Date|Recovered|
++-------+----------+---------+
+|  India|2021-05-23| 23728011|
+|  India|2021-05-24| 23728011|
++-------+----------+---------+
+
+ACTIVE CASES IN US
+
+us_cases=spark.sql("select Confirmed from Countries where Country='US' ")
+
+us_cases=spark.sql("SELECT Confirmed FROM Countries WHERE Country='US'")
+us_cases=us_cases.collect()
+plt.plot(us_cases)
+plt.show()
+
+ACTIVE CASES IN INDIA IN LAST 50 DAYS
+
+ 
+plt.plot(us_cases[-50:])
+plt.show()
+
+DEATHS IN US SINCE LAST YEAR
+
+US_deaths=spark.sql("SELECT Deaths from Countries WHERE Country='US'") 
+US_deaths=US_deaths.collect()
+plt.plot(US_deaths)
+plt.show()
+
+load
+
+us_cases=us_cases.write.format("json").save('/FileStore/tables/covid_cases/')
+
